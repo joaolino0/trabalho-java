@@ -4,11 +4,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class ConnectionFactory {
-    // Configurações do banco de dados (use a senha que você definiu!)
+public class Conexao {
     private static final String URL = "jdbc:mysql://localhost:3306/biblioteca";
     private static final String USER = "root";
-    private static final String PASSWORD = "B1bl1otec@2025"; // ⚠️ Sua senha aqui!
+    private static final String PASSWORD = "B1bl1otec@2025";
 
     // Metodo para obter a conexão
     public static Connection getConnection() {
