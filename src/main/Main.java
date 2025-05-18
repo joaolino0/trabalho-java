@@ -7,6 +7,7 @@ import model.Aluno;
 import model.Livro;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
 public class Main {
@@ -35,8 +36,9 @@ public class Main {
                     String nome = scanner.nextLine();
                     System.out.print("Matrícula: ");
                     String matricula = scanner.nextLine();
-                    System.out.print("Data de nascimento (AAAA-MM-DD): ");
-                    LocalDate nascimento = LocalDate.parse(scanner.nextLine());
+                    System.out.print("Data de nascimento (DD-MM-AAAA): ");
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+                    LocalDate nascimento = LocalDate.parse(scanner.nextLine(), formatter);
 
                     Aluno aluno = new Aluno(nome, matricula, nascimento);
                     alunoDAO.inserir(aluno);

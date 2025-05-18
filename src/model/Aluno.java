@@ -1,6 +1,7 @@
 package model;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class Aluno {
     private int idAluno;
@@ -13,6 +14,14 @@ public class Aluno {
         this.nome = nome;
         this.matricula = matricula;
         this.dataNascimento = dataNascimento;
+    }
+    public String getDataNascimentoFormatada() {
+        if (this.dataNascimento != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return this.dataNascimento.format(formatter);
+        } else {
+            return "";
+        }
     }
 
     // Getters e Setters (adicione os métodos abaixo)
