@@ -5,241 +5,216 @@ import util.Conexao;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EmprestimoDAO {
 
-    public void realizarEmprestimo(int idAluno, int idLivro) {
-        String verificarEstoque = "SELECT quantidade_estoque FROM Livros WHERE id_livro = ?";
-        String emprestarSQL = "INSERT INTO Emprestimos (id_aluno, id_livro, data_emprestimo) VALUES (?, ?, ?)";
-        String atualizarEstoque = "UPDATE Livros SET quantidade_estoque = quantidade_estoque - 1 WHERE id_livro = ?";
+	private static final DateTimeFormatter FORMATADOR_BR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-        try (Connection conn = Conexao.getConnection()) {
-            conn.setAutoCommit(false);
+	public void realizarEmprestimo(int idAluno, int idLivro) {
+		String verificarEstoque = "SELECT quantidade_estoque FROM Livros WHERE id_livro = ?";
+		String emprestarSQL = "INSERT INTO Emprestimos (id_aluno, id_livro, data_emprestimo) VALUES (?, ?, ?)";
+		String atualizarEstoque = "UPDATE Livros SET quantidade_estoque = quantidade_estoque - 1 WHERE id_livro = ?";
 
-            // Verificar estoque
-            try (PreparedStatement stmtEstoque = conn.prepareStatement(verificarEstoque)) {
-                stmtEstoque.setInt(1, idLivro);
-                ResultSet rs = stmtEstoque.executeQuery();
+		try (Connection conn = Conexao.getConnection()) {
+			conn.setAutoCommit(false);
 
-                if (!rs.next() || rs.getInt("quantidade_estoque") <= 0) {
-                    System.out.println("❌ Estoque insuficiente para empréstimo!");
-                    conn.rollback();
-                    return;
-                }
-            }
+			try (PreparedStatement stmtEstoque = conn.prepareStatement(verificarEstoque)) {
+				stmtEstoque.setInt(1, idLivro);
+				ResultSet rs = stmtEstoque.executeQuery();
 
-            // Registrar empréstimo
-            try (PreparedStatement stmtEmprestimo = conn.prepareStatement(emprestarSQL)) {
-                stmtEmprestimo.setInt(1, idAluno);
-                stmtEmprestimo.setInt(2, idLivro);
-                stmtEmprestimo.setDate(3, Date.valueOf(LocalDate.now()));
-                stmtEmprestimo.executeUpdate();
-            }
+				if (!rs.next() || rs.getInt("quantidade_estoque") <= 0) {
+					System.out.println("❌ Estoque insuficiente para empréstimo!");
+					conn.rollback();
+					return;
+				}
+			}
 
-            // Atualizar estoque
-            try (PreparedStatement stmtAtualizar = conn.prepareStatement(atualizarEstoque)) {
-                stmtAtualizar.setInt(1, idLivro);
-                stmtAtualizar.executeUpdate();
-            }
+			try (PreparedStatement stmtEmprestimo = conn.prepareStatement(emprestarSQL)) {
+				stmtEmprestimo.setInt(1, idAluno);
+				stmtEmprestimo.setInt(2, idLivro);
+				stmtEmprestimo.setDate(3, Date.valueOf(LocalDate.now()));
+				stmtEmprestimo.executeUpdate();
+			}
 
-            conn.commit();
-            System.out.println("✅ Empréstimo realizado com sucesso!");
+			try (PreparedStatement stmtAtualizar = conn.prepareStatement(atualizarEstoque)) {
+				stmtAtualizar.setInt(1, idLivro);
+				stmtAtualizar.executeUpdate();
+			}
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.err.println("Erro ao realizar empréstimo: " + e.getMessage());
-        }
-    }
+			conn.commit();
+			System.out.println("✅ Empréstimo realizado com sucesso!");
 
-    public void registrarDevolucao(int idEmprestimo) {
-        String buscarLivro = "SELECT id_livro FROM Emprestimos WHERE id_emprestimo = ?";
-        String atualizarEstoque = "UPDATE Livros SET quantidade_estoque = quantidade_estoque + 1 WHERE id_livro = ?";
-        String registrarDevolucao = "UPDATE Emprestimos SET data_devolucao = ? WHERE id_emprestimo = ?";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.err.println("Erro ao realizar empréstimo: " + e.getMessage());
+		}
+	}
 
-        try (Connection conn = Conexao.getConnection()) {
-            conn.setAutoCommit(false);
+	public void registrarDevolucao(int idEmprestimo) {
+		String buscarLivro = "SELECT id_livro FROM Emprestimos WHERE id_emprestimo = ?";
+		String atualizarEstoque = "UPDATE Livros SET quantidade_estoque = quantidade_estoque + 1 WHERE id_livro = ?";
+		String registrarDevolucao = "UPDATE Emprestimos SET data_devolucao = ? WHERE id_emprestimo = ?";
 
-            int idLivro;
+		try (Connection conn = Conexao.getConnection()) {
+			conn.setAutoCommit(false);
 
-            // Buscar id_livro do empréstimo
-            try (PreparedStatement stmtBuscar = conn.prepareStatement(buscarLivro)) {
-                stmtBuscar.setInt(1, idEmprestimo);
-                ResultSet rs = stmtBuscar.executeQuery();
+			int idLivro;
 
-                if (!rs.next()) {
-                    System.out.println("❌ Empréstimo não encontrado.");
-                    conn.rollback();
-                    return;
-                }
+			try (PreparedStatement stmtBuscar = conn.prepareStatement(buscarLivro)) {
+				stmtBuscar.setInt(1, idEmprestimo);
+				ResultSet rs = stmtBuscar.executeQuery();
 
-                idLivro = rs.getInt("id_livro");
-            }
+				if (!rs.next()) {
+					System.out.println("❌ Empréstimo não encontrado.");
+					conn.rollback();
+					return;
+				}
 
-            // Atualizar estoque
-            try (PreparedStatement stmtEstoque = conn.prepareStatement(atualizarEstoque)) {
-                stmtEstoque.setInt(1, idLivro);
-                stmtEstoque.executeUpdate();
-            }
+				idLivro = rs.getInt("id_livro");
+			}
 
-            // Registrar data de devolução
-            try (PreparedStatement stmtDevolucao = conn.prepareStatement(registrarDevolucao)) {
-                stmtDevolucao.setDate(1, Date.valueOf(LocalDate.now()));
-                stmtDevolucao.setInt(2, idEmprestimo);
-                stmtDevolucao.executeUpdate();
-            }
+			try (PreparedStatement stmtEstoque = conn.prepareStatement(atualizarEstoque)) {
+				stmtEstoque.setInt(1, idLivro);
+				stmtEstoque.executeUpdate();
+			}
 
-            conn.commit();
-            System.out.println("✅ Devolução registrada com sucesso!");
+			try (PreparedStatement stmtDevolucao = conn.prepareStatement(registrarDevolucao)) {
+				stmtDevolucao.setDate(1, Date.valueOf(LocalDate.now()));
+				stmtDevolucao.setInt(2, idEmprestimo);
+				stmtDevolucao.executeUpdate();
+			}
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.err.println("Erro ao registrar devolução: " + e.getMessage());
-        }
-    }
+			conn.commit();
+			System.out.println("✅ Devolução registrada com sucesso!");
 
-    public Emprestimo buscarPorId(int idEmprestimo) {
-        String sql = "SELECT * FROM Emprestimos WHERE id_emprestimo = ?";
-        Emprestimo emprestimo = null;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.err.println("Erro ao registrar devolução: " + e.getMessage());
+		}
+	}
 
-        try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+	public Emprestimo buscarPorId(int idEmprestimo) {
+		String sql = "SELECT * FROM Emprestimos WHERE id_emprestimo = ?";
+		Emprestimo emprestimo = null;
 
-            stmt.setInt(1, idEmprestimo);
-            ResultSet rs = stmt.executeQuery();
+		try (Connection conn = Conexao.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                emprestimo = new Emprestimo(
-                        rs.getInt("id_emprestimo"),
-                        rs.getInt("id_aluno"),
-                        rs.getInt("id_livro"),
-                        rs.getDate("data_emprestimo").toLocalDate(),
-                        rs.getDate("data_devolucao") != null ? rs.getDate("data_devolucao").toLocalDate() : null
-                );
-            }
+			stmt.setInt(1, idEmprestimo);
+			ResultSet rs = stmt.executeQuery();
 
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar empréstimo: " + e.getMessage());
-        }
+			if (rs.next()) {
+				emprestimo = new Emprestimo(rs.getInt("id_emprestimo"), rs.getInt("id_aluno"), rs.getInt("id_livro"),
+						rs.getDate("data_emprestimo").toLocalDate(),
+						rs.getDate("data_devolucao") != null ? rs.getDate("data_devolucao").toLocalDate() : null);
+			}
 
-        return emprestimo;
-    }
+		} catch (SQLException e) {
+			System.err.println("Erro ao buscar empréstimo: " + e.getMessage());
+		}
 
-    // Opcional: listar todos os empréstimos ativos
-    public List<Emprestimo> listarEmprestimosAtivos() {
-        List<Emprestimo> lista = new ArrayList<>();
-        String sql = "SELECT * FROM Emprestimos WHERE data_devolucao IS NULL";
+		return emprestimo;
+	}
 
-        try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+	public List<Emprestimo> listarEmprestimosAtivos() {
+		List<Emprestimo> lista = new ArrayList<>();
+		String sql = "SELECT * FROM Emprestimos WHERE data_devolucao IS NULL";
 
-            while (rs.next()) {
-                Emprestimo e = new Emprestimo(
-                        rs.getInt("id_emprestimo"),
-                        rs.getInt("id_aluno"),
-                        rs.getInt("id_livro"),
-                        rs.getDate("data_emprestimo").toLocalDate(),
-                        null
-                );
-                lista.add(e);
-            }
+		try (Connection conn = Conexao.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql);
+				ResultSet rs = stmt.executeQuery()) {
 
-        } catch (SQLException e) {
-            System.err.println("Erro ao listar empréstimos ativos: " + e.getMessage());
-        }
+			while (rs.next()) {
+				Emprestimo e = new Emprestimo(rs.getInt("id_emprestimo"), rs.getInt("id_aluno"), rs.getInt("id_livro"),
+						rs.getDate("data_emprestimo").toLocalDate(), null);
+				lista.add(e);
+			}
 
-        return lista;
-    }
+		} catch (SQLException e) {
+			System.err.println("Erro ao listar empréstimos ativos: " + e.getMessage());
+		}
 
-    // copia aqui
-    public void listarEmprestimosAtivosDetalhados() {
-    String sql = """
-        SELECT e.id_emprestimo, a.nome_aluno, l.titulo, e.data_emprestimo
-        FROM Emprestimos e
-        JOIN Alunos a ON e.id_aluno = a.id_aluno
-        JOIN Livros l ON e.id_livro = l.id_livro
-        WHERE e.data_devolucao IS NULL
-        """;
+		return lista;
+	}
 
-    try (Connection conn = Conexao.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
+	public void listarEmprestimosAtivosDetalhados() {
+		String sql = """
+				SELECT e.id_emprestimo, a.nome_aluno, l.titulo, e.data_emprestimo
+				FROM Emprestimos e
+				JOIN Alunos a ON e.id_aluno = a.id_aluno
+				JOIN Livros l ON e.id_livro = l.id_livro
+				WHERE e.data_devolucao IS NULL
+				""";
 
-        System.out.println("📋 Empréstimos Ativos:");
-        while (rs.next()) {
-            System.out.printf("ID: %d | Aluno: %s | Livro: %s | Data: %s\n",
-                    rs.getInt("id_emprestimo"),
-                    rs.getString("nome_aluno"),
-                    rs.getString("titulo"),
-                    rs.getDate("data_emprestimo").toString()
-            );
-        }
+		try (Connection conn = Conexao.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql);
+				ResultSet rs = stmt.executeQuery()) {
 
-    } catch (SQLException e) {
-        System.err.println("Erro ao listar empréstimos ativos: " + e.getMessage());
-    }
-}
+			System.out.println("📋 Empréstimos Ativos:");
+			while (rs.next()) {
+				System.out.printf("ID: %d | Aluno: %s | Livro: %s | Data: %s\n", rs.getInt("id_emprestimo"),
+						rs.getString("nome_aluno"), rs.getString("titulo"),
+						rs.getDate("data_emprestimo").toLocalDate().format(FORMATADOR_BR));
+			}
 
-    public void listarLivrosEmprestados() {
-    String sql = """
-        SELECT l.titulo, COUNT(*) AS total_emprestado
-        FROM Emprestimos e
-        JOIN Livros l ON e.id_livro = l.id_livro
-        WHERE e.data_devolucao IS NULL
-        GROUP BY l.titulo
-        """;
+		} catch (SQLException e) {
+			System.err.println("Erro ao listar empréstimos ativos: " + e.getMessage());
+		}
+	}
 
-    try (Connection conn = Conexao.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
+	public void listarLivrosEmprestados() {
+		String sql = """
+				SELECT l.titulo, COUNT(*) AS total_emprestado
+				FROM Emprestimos e
+				JOIN Livros l ON e.id_livro = l.id_livro
+				WHERE e.data_devolucao IS NULL
+				GROUP BY l.titulo
+				""";
 
-        System.out.println("📚 Livros Emprestados:");
-        while (rs.next()) {
-            System.out.printf("Livro: %s | Qtde emprestada: %d\n",
-                    rs.getString("titulo"),
-                    rs.getInt("total_emprestado")
-            );
-        }
+		try (Connection conn = Conexao.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql);
+				ResultSet rs = stmt.executeQuery()) {
 
-    } catch (SQLException e) {
-        System.err.println("Erro ao listar livros emprestados: " + e.getMessage());
-    }
-}
-public void listarHistoricoEmprestimos() {
-    String sql = """
-        SELECT e.id_emprestimo, a.nome_aluno, l.titulo,
-               e.data_emprestimo, e.data_devolucao
-        FROM Emprestimos e
-        JOIN Alunos a ON e.id_aluno = a.id_aluno
-        JOIN Livros l ON e.id_livro = l.id_livro
-        ORDER BY e.data_emprestimo DESC
-        """;
+			System.out.println("📚 Livros Emprestados:");
+			while (rs.next()) {
+				System.out.printf("Livro: %s | Qtde emprestada: %d\n", rs.getString("titulo"),
+						rs.getInt("total_emprestado"));
+			}
 
-    try (Connection conn = Conexao.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
+		} catch (SQLException e) {
+			System.err.println("Erro ao listar livros emprestados: " + e.getMessage());
+		}
+	}
 
-        System.out.println("🗃️ Histórico de Empréstimos:");
-        while (rs.next()) {
-            String devolucao = (rs.getDate("data_devolucao") != null)
-                    ? rs.getDate("data_devolucao").toString() : "Não devolvido";
+	public void listarHistoricoEmprestimos() {
+		String sql = """
+				SELECT e.id_emprestimo, a.nome_aluno, l.titulo,
+				       e.data_emprestimo, e.data_devolucao
+				FROM Emprestimos e
+				JOIN Alunos a ON e.id_aluno = a.id_aluno
+				JOIN Livros l ON e.id_livro = l.id_livro
+				ORDER BY e.data_emprestimo DESC
+				""";
 
-            System.out.printf("ID: %d | Aluno: %s | Livro: %s | Empréstimo: %s | Devolução: %s\n",
-                    rs.getInt("id_emprestimo"),
-                    rs.getString("nome_aluno"),
-                    rs.getString("titulo"),
-                    rs.getDate("data_emprestimo").toString(),
-                    devolucao
-            );
-        }
+		try (Connection conn = Conexao.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql);
+				ResultSet rs = stmt.executeQuery()) {
 
-    } catch (SQLException e) {
-        System.err.println("Erro ao listar histórico: " + e.getMessage());
-    }
-}
+			System.out.println("🗃️ Histórico de Empréstimos:");
+			while (rs.next()) {
+				String devolucao = (rs.getDate("data_devolucao") != null)
+						? rs.getDate("data_devolucao").toLocalDate().format(FORMATADOR_BR)
+						: "Não devolvido";
 
+				System.out.printf("ID: %d | Aluno: %s | Livro: %s | Empréstimo: %s | Devolução: %s\n",
+						rs.getInt("id_emprestimo"), rs.getString("nome_aluno"), rs.getString("titulo"),
+						rs.getDate("data_emprestimo").toLocalDate().format(FORMATADOR_BR), devolucao);
+			}
 
-    
+		} catch (SQLException e) {
+			System.err.println("Erro ao listar histórico: " + e.getMessage());
+		}
+	}
 }
