@@ -25,7 +25,7 @@ public class Aluno {
 		}
 	}
 
-	// Getters e Setters (adicione os métodos abaixo)
+	
 	public int getIdAluno() {
 		return idAluno;
 	}

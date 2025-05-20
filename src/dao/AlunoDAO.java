@@ -15,7 +15,7 @@ public class AlunoDAO {
 
             stmt.setString(1, aluno.getNome());
             stmt.setString(2, aluno.getMatricula());
-            // mudar para o padrão brasileiro
+            
             stmt.setDate(3, Date.valueOf(aluno.getDataNascimento()));
 
             stmt.executeUpdate();
