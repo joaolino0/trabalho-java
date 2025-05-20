@@ -140,81 +140,112 @@ public class EmprestimoDAO {
 	}
 
 	public void listarEmprestimosAtivosDetalhados() {
-		String sql = """
-				SELECT e.id_emprestimo, a.nome_aluno, l.titulo, e.data_emprestimo
-				FROM Emprestimos e
-				JOIN Alunos a ON e.id_aluno = a.id_aluno
-				JOIN Livros l ON e.id_livro = l.id_livro
-				WHERE e.data_devolucao IS NULL
-				""";
+	    String sql = """
+	        SELECT e.id_emprestimo, a.nome_aluno, l.titulo, e.data_emprestimo
+	        FROM Emprestimos e
+	        JOIN Alunos a ON e.id_aluno = a.id_aluno
+	        JOIN Livros l ON e.id_livro = l.id_livro
+	        WHERE e.data_devolucao IS NULL
+	        """;
 
-		try (Connection conn = Conexao.getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql);
-				ResultSet rs = stmt.executeQuery()) {
+	    try (Connection conn = Conexao.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
 
-			System.out.println("📋 Empréstimos Ativos:");
-			while (rs.next()) {
-				System.out.printf("ID: %d | Aluno: %s | Livro: %s | Data: %s\n", rs.getInt("id_emprestimo"),
-						rs.getString("nome_aluno"), rs.getString("titulo"),
-						rs.getDate("data_emprestimo").toLocalDate().format(FORMATADOR_BR));
-			}
+	        System.out.println("📋 Empréstimos Ativos:");
+	        boolean vazio = true;
 
-		} catch (SQLException e) {
-			System.err.println("Erro ao listar empréstimos ativos: " + e.getMessage());
-		}
+	        while (rs.next()) {
+	            vazio = false;
+	            System.out.printf("ID: %d | Aluno: %s | Livro: %s | Data: %s\n",
+	                    rs.getInt("id_emprestimo"),
+	                    rs.getString("nome_aluno"),
+	                    rs.getString("titulo"),
+	                    rs.getDate("data_emprestimo").toLocalDate().format(FORMATADOR_BR)
+	            );
+	        }
+
+	        if (vazio) {
+	            System.out.println("⚠️ Nenhum empréstimo ativo no momento.");
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Erro ao listar empréstimos ativos: " + e.getMessage());
+	    }
 	}
 
 	public void listarLivrosEmprestados() {
-		String sql = """
-				SELECT l.titulo, COUNT(*) AS total_emprestado
-				FROM Emprestimos e
-				JOIN Livros l ON e.id_livro = l.id_livro
-				WHERE e.data_devolucao IS NULL
-				GROUP BY l.titulo
-				""";
+	    String sql = """
+	        SELECT l.titulo, COUNT(*) AS total_emprestado
+	        FROM Emprestimos e
+	        JOIN Livros l ON e.id_livro = l.id_livro
+	        WHERE e.data_devolucao IS NULL
+	        GROUP BY l.titulo
+	        """;
 
-		try (Connection conn = Conexao.getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql);
-				ResultSet rs = stmt.executeQuery()) {
+	    try (Connection conn = Conexao.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
 
-			System.out.println("📚 Livros Emprestados:");
-			while (rs.next()) {
-				System.out.printf("Livro: %s | Qtde emprestada: %d\n", rs.getString("titulo"),
-						rs.getInt("total_emprestado"));
-			}
+	        System.out.println("📚 Livros Emprestados:");
+	        boolean vazio = true;
 
-		} catch (SQLException e) {
-			System.err.println("Erro ao listar livros emprestados: " + e.getMessage());
-		}
+	        while (rs.next()) {
+	            vazio = false;
+	            System.out.printf("Livro: %s | Qtde emprestada: %d\n",
+	                    rs.getString("titulo"),
+	                    rs.getInt("total_emprestado")
+	            );
+	        }
+
+	        if (vazio) {
+	            System.out.println("⚠️ Nenhum livro emprestado atualmente.");
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Erro ao listar livros emprestados: " + e.getMessage());
+	    }
 	}
 
 	public void listarHistoricoEmprestimos() {
-		String sql = """
-				SELECT e.id_emprestimo, a.nome_aluno, l.titulo,
-				       e.data_emprestimo, e.data_devolucao
-				FROM Emprestimos e
-				JOIN Alunos a ON e.id_aluno = a.id_aluno
-				JOIN Livros l ON e.id_livro = l.id_livro
-				ORDER BY e.data_emprestimo DESC
-				""";
+	    String sql = """
+	        SELECT e.id_emprestimo, a.nome_aluno, l.titulo,
+	               e.data_emprestimo, e.data_devolucao
+	        FROM Emprestimos e
+	        JOIN Alunos a ON e.id_aluno = a.id_aluno
+	        JOIN Livros l ON e.id_livro = l.id_livro
+	        ORDER BY e.data_emprestimo DESC
+	        """;
 
-		try (Connection conn = Conexao.getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql);
-				ResultSet rs = stmt.executeQuery()) {
+	    try (Connection conn = Conexao.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
 
-			System.out.println("🗃️ Histórico de Empréstimos:");
-			while (rs.next()) {
-				String devolucao = (rs.getDate("data_devolucao") != null)
-						? rs.getDate("data_devolucao").toLocalDate().format(FORMATADOR_BR)
-						: "Não devolvido";
+	        System.out.println("🗃️ Histórico de Empréstimos:");
+	        boolean vazio = true;
 
-				System.out.printf("ID: %d | Aluno: %s | Livro: %s | Empréstimo: %s | Devolução: %s\n",
-						rs.getInt("id_emprestimo"), rs.getString("nome_aluno"), rs.getString("titulo"),
-						rs.getDate("data_emprestimo").toLocalDate().format(FORMATADOR_BR), devolucao);
-			}
+	        while (rs.next()) {
+	            vazio = false;
+	            String devolucao = (rs.getDate("data_devolucao") != null)
+	                    ? rs.getDate("data_devolucao").toLocalDate().format(FORMATADOR_BR)
+	                    : "Não devolvido";
 
-		} catch (SQLException e) {
-			System.err.println("Erro ao listar histórico: " + e.getMessage());
-		}
+	            System.out.printf("ID: %d | Aluno: %s | Livro: %s | Empréstimo: %s | Devolução: %s\n",
+	                    rs.getInt("id_emprestimo"),
+	                    rs.getString("nome_aluno"),
+	                    rs.getString("titulo"),
+	                    rs.getDate("data_emprestimo").toLocalDate().format(FORMATADOR_BR),
+	                    devolucao
+	            );
+	        }
+
+	        if (vazio) {
+	            System.out.println("⚠️ Nenhum histórico de empréstimos encontrado.");
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Erro ao listar histórico: " + e.getMessage());
+	    }
 	}
+
 }
