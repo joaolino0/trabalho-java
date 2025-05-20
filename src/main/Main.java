@@ -42,7 +42,7 @@ public class Main {
 
 				Aluno aluno = new Aluno(nome, matricula, nascimento);
 				alunoDAO.inserir(aluno);
-				System.out.println("✅ Aluno cadastrado com ID: " + aluno.getIdAluno());
+				System.out.println("Aluno cadastrado com ID: " + aluno.getIdAluno());
 			}
 
 			case 2 -> {
@@ -57,7 +57,7 @@ public class Main {
 
 				Livro livro = new Livro(titulo, autor, ano, qtd);
 				livroDAO.inserir(livro);
-				System.out.println("✅ Livro cadastrado com ID: " + livro.getIdLivro());
+				System.out.println("Livro cadastrado com ID: " + livro.getIdLivro());
 			}
 
 			case 3 -> {
@@ -87,12 +87,12 @@ public class Main {
 					case 1 -> emprestimoDAO.listarEmprestimosAtivosDetalhados();
 					case 2 -> emprestimoDAO.listarLivrosEmprestados();
 					case 3 -> emprestimoDAO.listarHistoricoEmprestimos();
-					default -> System.out.println("❌ Opção inválida.");
+					default -> System.out.println("Opção inválida.");
 				}
 			}
 
-			case 0 -> System.out.println("Encerrando o sistema...");
-			default -> System.out.println("❌ Opção inválida.");
+			case 0 -> System.out.println("Sistema Encerrado");
+			default -> System.out.println("Opção inválida.");
 			}
 
 		} while (opcao != 0);
