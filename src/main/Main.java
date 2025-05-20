@@ -84,10 +84,10 @@ public class Main {
 				int rel = Integer.parseInt(scanner.nextLine());
 
 				switch (rel) {
-				case 1 -> emprestimoDAO.listarEmprestimosAtivosDetalhados();
-				case 2 -> emprestimoDAO.listarLivrosEmprestados();
-				case 3 -> emprestimoDAO.listarHistoricoEmprestimos();
-				default -> System.out.println("❌ Opção inválida.");
+					case 1 -> emprestimoDAO.listarEmprestimosAtivosDetalhados();
+					case 2 -> emprestimoDAO.listarLivrosEmprestados();
+					case 3 -> emprestimoDAO.listarHistoricoEmprestimos();
+					default -> System.out.println("❌ Opção inválida.");
 				}
 			}
 
